@@ -9,7 +9,7 @@
 ##    ② 아티팩트 전송
 ##    ③ 서비스 재기동
 
-name: Deploy service for production
+name: Deploy service for production (Gradle)
 on:
   workflow_dispatch:
   push:
@@ -31,7 +31,7 @@ jobs:
       - name: Build package
         run: ./gradlew bootJar
       ## 빌드 아티팩트 확인
-      - name: Display structure of artifact files
+      - name: Show structure of artifact files
         run: ls -ahl ./build/libs/*.jar
       ## 빌드 아티팩트 업로드
       - name: Upload build artifact for job
@@ -43,8 +43,8 @@ jobs:
           path: "./build/libs/*.jar"
   ## 2. 배포
   distribute:
-    ## 빌드가 선행되어야 하나, 항상 실행 (PR시 CI로 확인한다는 전제)
-    if: ${{ always() }}
+    ## 빌드가 선행되야함.
+#    if: ${{ always() }}
     needs: [ build ]
     runs-on: ubuntu-latest
     steps:
@@ -58,7 +58,7 @@ jobs:
           name: project_artifact
           path: dist
       ## 아티팩트 확인
-      - name: Display structure of downloaded files
+      - name: Show structure of downloaded files
         run: |
           ls -alh dist
       ## 서버에 아티팩트 전송
@@ -75,7 +75,7 @@ jobs:
           ## 작업에 사용했던 dist 디렉토리를 경로상에서 제거
           strip_components: 1
       ## 전송된 아티팩트 확인
-      - name: Display structure of transfer files
+      - name: Show structure of transfer files
         uses: appleboy/ssh-action@master
         with:
           username: ${{ secrets.USERNAME }}
@@ -86,12 +86,12 @@ jobs:
             cd ${{ secrets.DIST_PATH }}
             ls -alh
   ## 3. 서비스 재기동
-  service_shutdown:
+  service_restart:
     ## 앞 작업이 선행되고 성공해야 함
     needs: [ build, distribute ]
     runs-on: ubuntu-latest
     steps:
-      - name: Shutdown service
+      - name: Call service restart
         uses: appleboy/ssh-action@master
         with:
           username: ${{ secrets.USERNAME }}
