@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v2
       ## 빌드
       - name: Build package
-        run: ./mvnw package
+        run: ./gradlew bootJar
       ## 빌드 아티팩트 확인
       - name: Display structure of artifact files
         run: ls -ahl ./build/libs/*.jar
