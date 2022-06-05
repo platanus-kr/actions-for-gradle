@@ -1,0 +1,104 @@
+## 2022 github.com/platanus-kr
+##
+## 목적
+##    빌드와 배포 분리
+## 실행 조건
+##    master에 push되는 조건 (PR merge, 다이렉트 커밋 포함)
+## 배포 작업 단계
+##    ① 빌드
+##    ② 아티팩트 전송
+##    ③ 서비스 재기동
+
+name: Deploy service for production
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+#  workflow_run:
+#    workflows: [ Maven Package Build ]
+#    types:
+#      - completed
+
+jobs:
+  ## 1. 빌드
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      ## 형상 다운로드
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      ## 빌드
+      - name: Build package
+        run: ./mvnw package
+      ## 빌드 아티팩트 확인
+      - name: Display structure of artifact files
+        run: ls -ahl ./build/libs/*.jar
+#      ## 빌드 아티팩트 업로드
+#      - name: Upload build artifact for job
+#        uses: actions/upload-artifact@v3
+#        with:
+#          ## 업로드 키 값 (임의지정)
+#          name: project_artifact
+#          ## Maven의 경우
+#          path: "./target/*.jar"
+#          ## Gradle의 경우는 plain.jar를 지우고 작업하는게 좋을 것 같음
+#  ## 2. 배포
+#  distribute:
+#    ## 빌드가 선행되어야 하나, 항상 실행 (PR시 CI로 확인한다는 전제)
+#    if: ${{ always() }}
+#    needs: [ build ]
+#    runs-on: ubuntu-latest
+#    steps:
+#      ## 아티팩트 전송을 위한 임시 공간
+#      - name: Create distribute
+#        run: mkdir ~/dist
+#      ## 빌드 한 아티팩트 다운로드
+#      - name: Download build artifact for job
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: project_artifact
+#          path: dist
+#      ## 아티팩트 확인
+#      - name: Display structure of downloaded files
+#        run: |
+#          ls -alh dist
+#      ## 서버에 아티팩트 전송
+#      - name: Transfer artifact
+#        uses: appleboy/scp-action@master
+#        with:
+#          username: ${{ secrets.USERNAME }}
+#          host: ${{ secrets.HOST }}
+#          port: ${{ secrets.PORT }}
+#          key: ${{ secrets.KEY }}
+#          rm: true
+#          source: "dist/*.jar"
+#          target: "/home/ec2-user/deploy"
+#          ## 작업에 사용했던 dist 디렉토리를 경로상에서 제거
+#          strip_components: 1
+#      ## 전송된 아티팩트 확인
+#      - name: Display structure of transfer files
+#        uses: appleboy/ssh-action@master
+#        with:
+#          username: ${{ secrets.USERNAME }}
+#          host: ${{ secrets.HOST }}
+#          port: ${{ secrets.PORT }}
+#          key: ${{ secrets.KEY }}
+#          script: |
+#            cd /home/ec2-user/deploy
+#            ls -alh
+#  ## 3. 서비스 재기동
+#  service_shutdown:
+#    ## 앞 작업이 선행되고 성공해야 함
+#    needs: [ build, distribute ]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Shutdown service
+#        uses: appleboy/ssh-action@master
+#        with:
+#          username: ${{ secrets.USERNAME }}
+#          host: ${{ secrets.HOST }}
+#          port: ${{ secrets.PORT }}
+#          key: ${{ secrets.KEY }}
+#          script: |
+#            echo "서비스 종료 스크립트. pgrep 부분 개선 및 루프.."
+#            echo "서비스 시작 스크립트"
